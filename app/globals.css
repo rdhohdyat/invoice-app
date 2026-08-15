@@ -60,3 +60,78 @@ body {
   background: #ECFDF5;
   color: #059669;
 }
+
+/* Transitions and Animations for Modal & Toast */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes slideUpScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+@keyframes slideDownScaleOut {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95) translateY(15px);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.animate-fade-out {
+  animation: fadeOut 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.animate-modal-in {
+  animation: slideUpScaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+.animate-modal-out {
+  animation: slideDownScaleOut 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Toast animations */
+@keyframes toastSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.9);
+  }
+  70% {
+    transform: translateY(4px) scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes toastSlideOut {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.9) translateY(-20px);
+  }
+}
+
+.animate-toast-in {
+  animation: toastSlideIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+.animate-toast-out {
+  animation: toastSlideOut 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}

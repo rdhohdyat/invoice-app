@@ -9,6 +9,7 @@ export interface ToastMessage {
   id: string;
   type: ToastType;
   message: string;
+  isExiting?: boolean;
 }
 
 interface ToastContextType {
@@ -22,16 +23,29 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const showToast = (message: string, type: ToastType = "success") => {
     const id = String(Date.now() + Math.random());
-    setToasts((prev) => [...prev, { id, type, message }]);
+    setToasts((prev) => [...prev, { id, type, message, isExiting: false }]);
 
-    // Auto remove after 3.5 seconds
+    // Trigger slide out animation after 3.25 seconds
+    setTimeout(() => {
+      setToasts((prev) =>
+        prev.map((t) => (t.id === id ? { ...t, isExiting: true } : t))
+      );
+    }, 3250);
+
+    // Completely remove toast after 3.5 seconds
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
     }, 3500);
   };
 
   const removeToast = (id: string) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
+    setToasts((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, isExiting: true } : t))
+    );
+    // Remove from state after the exit animation completes (250ms)
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 250);
   };
 
   const toastIcons: Record<ToastType, { icon: string; bg: string; text: string; border: string }> = {
@@ -71,7 +85,9 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           return (
             <div
               key={t.id}
-              className={`pointer-events-auto flex items-center justify-between gap-3 px-4 py-3 rounded-xl border shadow-xl transition-all duration-300 animate-bounce-once ${style.bg} ${style.border} ${style.text}`}
+              className={`pointer-events-auto flex items-center justify-between gap-3 px-4 py-3 rounded-xl border shadow-xl transition-all duration-300 ${
+                t.isExiting ? "animate-toast-out" : "animate-toast-in"
+              } ${style.bg} ${style.border} ${style.text}`}
             >
               <div className="flex items-center gap-2.5 text-sm font-medium">
                 <Icon icon={style.icon} className="text-xl shrink-0" />
