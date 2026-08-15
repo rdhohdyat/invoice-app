@@ -1,0 +1,1281 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Freelancer Invoice Manager</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300..700&display=swap" rel="stylesheet">
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
+
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['Fredoka', 'ui-sans-serif', 'system-ui'],
+        },
+        colors: {
+          brand: {
+            50: '#EEF1FF',
+            100: '#E0E4FF',
+            200: '#C6CCFF',
+            300: '#A3ABFA',
+            400: '#7C82F0',
+            500: '#5B5FE0',
+            600: '#4A46D1',
+            700: '#3D38B0',
+            800: '#332F8F',
+            900: '#2A2772',
+          },
+        },
+        boxShadow: {
+          soft: '0 1px 2px 0 rgba(30, 30, 60, 0.04), 0 2px 8px -2px rgba(30, 30, 60, 0.06)',
+          card: '0 2px 6px -2px rgba(30, 30, 60, 0.08), 0 8px 24px -8px rgba(30, 30, 60, 0.10)',
+        },
+        borderRadius: {
+          xl2: '1.25rem',
+        }
+      }
+    }
+  }
+</script>
+
+<style>
+  body { font-family: 'Fredoka', ui-sans-serif, system-ui; }
+  /* !important is required here: Tailwind's CDN build injects its utility
+     stylesheet dynamically, sometimes AFTER this block, which lets classes
+     like md:flex on #app-shell beat a plain `display:none` and causes every
+     screen (login, register, dashboard, etc.) to render at the same time. */
+  .view { display: none !important; }
+  .view.active { display: block !important; }
+  #app-shell.active { display: flex !important; }
+  .devbar-btn.active { background: #EEF1FF; color: #4A46D1; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: #D8DAF5; border-radius: 999px; }
+  .status-badge { display:inline-flex; align-items:center; gap:.3rem; font-size:.72rem; font-weight:600; padding:.28rem .6rem; border-radius:999px; letter-spacing:.02em; }
+</style>
+</head>
+
+<body class="bg-gray-50 text-gray-800 antialiased">
+
+<!-- ================= DEV PREVIEW SWITCHER (not part of product UI) ================= -->
+<div class="fixed top-0 left-0 right-0 z-[100] bg-gray-900 text-gray-300 text-xs flex items-center gap-1 px-3 py-1.5 overflow-x-auto">
+  <span class="text-gray-500 mr-2 shrink-0">Preview:</span>
+  <button onclick="showPage('login')" class="devbar-btn shrink-0 px-2.5 py-1 rounded-md hover:bg-gray-800">Login</button>
+  <button onclick="showPage('register')" class="devbar-btn shrink-0 px-2.5 py-1 rounded-md hover:bg-gray-800">Register</button>
+  <button onclick="showPage('dashboard')" class="devbar-btn shrink-0 px-2.5 py-1 rounded-md hover:bg-gray-800">Dashboard</button>
+  <button onclick="showPage('clients')" class="devbar-btn shrink-0 px-2.5 py-1 rounded-md hover:bg-gray-800">Clients</button>
+  <button onclick="showPage('client-detail')" class="devbar-btn shrink-0 px-2.5 py-1 rounded-md hover:bg-gray-800">Client Detail</button>
+  <button onclick="showPage('services')" class="devbar-btn shrink-0 px-2.5 py-1 rounded-md hover:bg-gray-800">Services</button>
+  <button onclick="showPage('invoices')" class="devbar-btn shrink-0 px-2.5 py-1 rounded-md hover:bg-gray-800">Invoices</button>
+  <button onclick="showPage('invoice-create')" class="devbar-btn shrink-0 px-2.5 py-1 rounded-md hover:bg-gray-800">Create Invoice</button>
+  <button onclick="showPage('invoice-detail')" class="devbar-btn shrink-0 px-2.5 py-1 rounded-md hover:bg-gray-800">Invoice Detail</button>
+  <button onclick="showPage('settings')" class="devbar-btn shrink-0 px-2.5 py-1 rounded-md hover:bg-gray-800">Settings</button>
+  <button onclick="showPage('empty')" class="devbar-btn shrink-0 px-2.5 py-1 rounded-md hover:bg-gray-800">Empty/Loading</button>
+</div>
+
+<div class="pt-9"></div>
+
+<!-- ================= AUTH: LOGIN ================= -->
+<section id="view-login" class="view min-h-screen flex items-center justify-center px-4 py-10">
+  <div class="w-full max-w-sm">
+    <div class="flex flex-col items-center mb-8">
+      <div class="w-12 h-12 rounded-2xl bg-brand-600 flex items-center justify-center shadow-soft mb-3">
+        <iconify-icon icon="solar:bill-list-bold" class="text-white text-2xl"></iconify-icon>
+      </div>
+      <h1 class="font-semibold text-lg text-gray-900">Freelancer Invoice</h1>
+    </div>
+
+    <div class="bg-white border border-gray-100 rounded-xl2 shadow-card p-7">
+      <h2 class="text-xl font-semibold text-gray-900 mb-1">Welcome back</h2>
+      <p class="text-sm text-gray-400 mb-6">Masuk untuk mengelola invoice kamu.</p>
+
+      <form class="space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1.5">Email</label>
+          <div class="relative">
+            <iconify-icon icon="solar:letter-linear" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></iconify-icon>
+            <input type="email" placeholder="you@email.com" class="w-full pl-10 pr-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200 focus:border-brand-400 placeholder:text-gray-300">
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1.5">Password</label>
+          <div class="relative">
+            <iconify-icon icon="solar:lock-password-linear" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></iconify-icon>
+            <input type="password" placeholder="••••••••" class="w-full pl-10 pr-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200 focus:border-brand-400 placeholder:text-gray-300">
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between text-sm pt-1">
+          <label class="flex items-center gap-2 text-gray-500 text-xs">
+            <input type="checkbox" class="rounded border-gray-300 text-brand-600 focus:ring-brand-300">
+            Remember me
+          </label>
+          <a href="#" class="text-xs font-medium text-brand-600 hover:text-brand-700">Forgot password?</a>
+        </div>
+
+        <button type="button" class="w-full py-2.5 rounded-xl bg-brand-600 text-white text-sm font-medium shadow-soft hover:bg-brand-700 transition">Login</button>
+      </form>
+    </div>
+
+    <p class="text-center text-sm text-gray-400 mt-6">
+      Don't have an account?
+      <button onclick="showPage('register')" class="text-brand-600 font-medium hover:text-brand-700">Register</button>
+    </p>
+  </div>
+</section>
+
+<!-- ================= AUTH: REGISTER ================= -->
+<section id="view-register" class="view min-h-screen flex items-center justify-center px-4 py-10">
+  <div class="w-full max-w-sm">
+    <div class="flex flex-col items-center mb-8">
+      <div class="w-12 h-12 rounded-2xl bg-brand-600 flex items-center justify-center shadow-soft mb-3">
+        <iconify-icon icon="solar:bill-list-bold" class="text-white text-2xl"></iconify-icon>
+      </div>
+      <h1 class="font-semibold text-lg text-gray-900">Freelancer Invoice</h1>
+    </div>
+
+    <div class="bg-white border border-gray-100 rounded-xl2 shadow-card p-7">
+      <h2 class="text-xl font-semibold text-gray-900 mb-1">Create your account</h2>
+      <p class="text-sm text-gray-400 mb-6">Mulai kelola klien dan invoice-mu.</p>
+
+      <form class="space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1.5">Full name</label>
+          <input type="text" placeholder="Ridho Hidayat" class="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200 focus:border-brand-400 placeholder:text-gray-300">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1.5">Email</label>
+          <input type="email" placeholder="you@email.com" class="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200 focus:border-brand-400 placeholder:text-gray-300">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1.5">Password</label>
+          <input type="password" placeholder="••••••••" class="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200 focus:border-brand-400 placeholder:text-gray-300">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1.5">Confirm password</label>
+          <input type="password" placeholder="••••••••" class="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200 focus:border-brand-400 placeholder:text-gray-300">
+        </div>
+
+        <button type="button" class="w-full py-2.5 rounded-xl bg-brand-600 text-white text-sm font-medium shadow-soft hover:bg-brand-700 transition mt-2">Create Account</button>
+      </form>
+    </div>
+
+    <p class="text-center text-sm text-gray-400 mt-6">
+      Already have an account?
+      <button onclick="showPage('login')" class="text-brand-600 font-medium hover:text-brand-700">Login</button>
+    </p>
+  </div>
+</section>
+
+<!-- ================= APP SHELL (wraps all dashboard-style pages) ================= -->
+<div id="app-shell" class="view md:flex">
+
+  <!-- Sidebar -->
+  <aside class="hidden md:flex md:flex-col w-60 shrink-0 bg-white border-r border-gray-100 min-h-screen py-5 px-4">
+    <div class="flex items-center gap-2.5 px-2 mb-8">
+      <div class="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center">
+        <iconify-icon icon="solar:bill-list-bold" class="text-white text-lg"></iconify-icon>
+      </div>
+      <div class="leading-tight">
+        <p class="font-semibold text-sm text-gray-900">Freelancer</p>
+        <p class="text-[11px] text-gray-400 -mt-0.5">Invoice Manager</p>
+      </div>
+    </div>
+
+    <nav class="flex-1 space-y-1">
+      <p class="px-3 text-[10px] font-semibold text-gray-300 uppercase tracking-wider mb-1.5">Main</p>
+      <a onclick="showPage('dashboard')" data-nav="dashboard" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium cursor-pointer">
+        <iconify-icon icon="solar:widget-5-bold-duotone" class="text-lg"></iconify-icon> Dashboard
+      </a>
+
+      <p class="px-3 text-[10px] font-semibold text-gray-300 uppercase tracking-wider mb-1.5 mt-4">Manage</p>
+      <a onclick="showPage('clients')" data-nav="clients client-detail" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium cursor-pointer">
+        <iconify-icon icon="solar:users-group-rounded-bold-duotone" class="text-lg"></iconify-icon> Clients
+      </a>
+      <a onclick="showPage('services')" data-nav="services" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium cursor-pointer">
+        <iconify-icon icon="solar:box-bold-duotone" class="text-lg"></iconify-icon> Services
+      </a>
+      <a onclick="showPage('invoices')" data-nav="invoices invoice-create invoice-detail" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium cursor-pointer">
+        <iconify-icon icon="solar:bill-list-bold-duotone" class="text-lg"></iconify-icon> Invoices
+      </a>
+
+      <p class="px-3 text-[10px] font-semibold text-gray-300 uppercase tracking-wider mb-1.5 mt-4">Account</p>
+      <a onclick="showPage('settings')" data-nav="settings" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium cursor-pointer">
+        <iconify-icon icon="solar:settings-bold-duotone" class="text-lg"></iconify-icon> Settings
+      </a>
+    </nav>
+
+    <button onclick="showPage('login')" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-400 hover:bg-gray-50 hover:text-red-500 transition">
+      <iconify-icon icon="solar:logout-3-bold-duotone" class="text-lg"></iconify-icon> Logout
+    </button>
+  </aside>
+
+  <!-- Main column -->
+  <div class="flex-1 min-w-0">
+
+    <!-- Top header -->
+    <header class="sticky top-9 z-20 bg-gray-50/90 backdrop-blur border-b border-gray-100 px-5 md:px-8 py-3.5 flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <button class="md:hidden w-9 h-9 rounded-xl bg-white border border-gray-200 flex items-center justify-center">
+          <iconify-icon icon="solar:hamburger-menu-linear" class="text-lg text-gray-500"></iconify-icon>
+        </button>
+        <h2 id="page-title" class="font-semibold text-gray-900 text-base md:text-lg">Dashboard</h2>
+      </div>
+
+      <div class="hidden md:flex items-center flex-1 max-w-xs">
+        <div class="relative w-full">
+          <iconify-icon icon="solar:magnifer-linear" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></iconify-icon>
+          <input type="text" placeholder="Search..." class="w-full pl-9 pr-3 py-2 rounded-xl bg-white border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200 placeholder:text-gray-300">
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button class="relative w-9 h-9 rounded-xl bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-50">
+          <iconify-icon icon="solar:bell-bold-duotone" class="text-lg text-gray-500"></iconify-icon>
+          <span class="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full"></span>
+        </button>
+        <div class="flex items-center gap-2 pl-3 border-l border-gray-200 cursor-pointer">
+          <div class="w-8 h-8 rounded-full bg-brand-100 flex items-center justify-center text-brand-700 text-xs font-semibold">R</div>
+          <div class="hidden md:block leading-tight">
+            <p class="text-sm font-medium text-gray-800">Ridho</p>
+            <p class="text-[11px] text-gray-400 -mt-0.5">Freelancer</p>
+          </div>
+          <iconify-icon icon="solar:alt-arrow-down-linear" class="hidden md:block text-gray-400 text-sm"></iconify-icon>
+        </div>
+      </div>
+    </header>
+
+    <main class="p-5 md:p-8">
+
+      <!-- ============ PAGE: DASHBOARD ============ -->
+      <div id="page-dashboard" class="page-content">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+          <div>
+            <h1 class="text-xl font-semibold text-gray-900">Good morning, Ridho 👋</h1>
+            <p class="text-sm text-gray-400 mt-0.5">Here's what's happening with your business.</p>
+          </div>
+          <button onclick="showPage('invoice-create')" class="inline-flex items-center gap-2 bg-brand-600 text-white text-sm font-medium px-4 py-2.5 rounded-xl shadow-soft hover:bg-brand-700 transition w-fit">
+            <iconify-icon icon="solar:add-circle-bold"></iconify-icon> Create Invoice
+          </button>
+        </div>
+
+        <!-- Stat cards -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div class="bg-white border border-gray-100 rounded-xl2 shadow-soft p-5">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-medium text-gray-400">Total Revenue</span>
+              <div class="w-8 h-8 rounded-lg bg-brand-50 flex items-center justify-center"><iconify-icon icon="solar:wallet-money-bold-duotone" class="text-brand-600"></iconify-icon></div>
+            </div>
+            <p class="text-xl font-semibold text-gray-900">Rp 15.500.000</p>
+          </div>
+          <div class="bg-white border border-gray-100 rounded-xl2 shadow-soft p-5">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-medium text-gray-400">Paid</span>
+              <div class="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center"><iconify-icon icon="solar:check-circle-bold-duotone" class="text-emerald-600"></iconify-icon></div>
+            </div>
+            <p class="text-xl font-semibold text-gray-900">Rp 8.000.000</p>
+          </div>
+          <div class="bg-white border border-gray-100 rounded-xl2 shadow-soft p-5">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-medium text-gray-400">Unpaid</span>
+              <div class="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center"><iconify-icon icon="solar:clock-circle-bold-duotone" class="text-amber-600"></iconify-icon></div>
+            </div>
+            <p class="text-xl font-semibold text-gray-900">Rp 5.000.000</p>
+          </div>
+          <div class="bg-white border border-gray-100 rounded-xl2 shadow-soft p-5">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-medium text-gray-400">Overdue</span>
+              <div class="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center"><iconify-icon icon="solar:danger-triangle-bold-duotone" class="text-red-500"></iconify-icon></div>
+            </div>
+            <p class="text-xl font-semibold text-gray-900">Rp 2.500.000</p>
+          </div>
+        </div>
+
+        <!-- Chart + recent -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+          <div class="lg:col-span-2 bg-white border border-gray-100 rounded-xl2 shadow-soft p-5">
+            <div class="flex items-center justify-between mb-5">
+              <div>
+                <h3 class="font-semibold text-gray-900 text-sm">Revenue Overview</h3>
+                <p class="text-xs text-gray-400">Last 6 Months</p>
+              </div>
+              <span class="text-xs bg-gray-50 border border-gray-100 px-2.5 py-1 rounded-lg text-gray-500">Monthly</span>
+            </div>
+            <div class="flex items-end gap-4 h-44 px-2">
+              <div class="flex-1 flex flex-col items-center gap-2">
+                <div class="w-full bg-brand-100 rounded-lg" style="height:45%"></div>
+                <span class="text-[11px] text-gray-400">Mar</span>
+              </div>
+              <div class="flex-1 flex flex-col items-center gap-2">
+                <div class="w-full bg-brand-100 rounded-lg" style="height:60%"></div>
+                <span class="text-[11px] text-gray-400">Apr</span>
+              </div>
+              <div class="flex-1 flex flex-col items-center gap-2">
+                <div class="w-full bg-brand-200 rounded-lg" style="height:38%"></div>
+                <span class="text-[11px] text-gray-400">May</span>
+              </div>
+              <div class="flex-1 flex flex-col items-center gap-2">
+                <div class="w-full bg-brand-100 rounded-lg" style="height:72%"></div>
+                <span class="text-[11px] text-gray-400">Jun</span>
+              </div>
+              <div class="flex-1 flex flex-col items-center gap-2">
+                <div class="w-full bg-brand-100 rounded-lg" style="height:55%"></div>
+                <span class="text-[11px] text-gray-400">Jul</span>
+              </div>
+              <div class="flex-1 flex flex-col items-center gap-2">
+                <div class="w-full bg-brand-600 rounded-lg" style="height:95%"></div>
+                <span class="text-[11px] font-medium text-gray-600">Aug</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white border border-gray-100 rounded-xl2 shadow-soft p-5">
+            <h3 class="font-semibold text-gray-900 text-sm mb-4">Payment Status</h3>
+            <div class="space-y-4">
+              <div>
+                <div class="flex justify-between text-xs mb-1.5"><span class="text-gray-500">Paid</span><span class="font-medium text-gray-700">52%</span></div>
+                <div class="h-2 rounded-full bg-gray-100"><div class="h-2 rounded-full bg-emerald-500" style="width:52%"></div></div>
+              </div>
+              <div>
+                <div class="flex justify-between text-xs mb-1.5"><span class="text-gray-500">Unpaid</span><span class="font-medium text-gray-700">32%</span></div>
+                <div class="h-2 rounded-full bg-gray-100"><div class="h-2 rounded-full bg-amber-500" style="width:32%"></div></div>
+              </div>
+              <div>
+                <div class="flex justify-between text-xs mb-1.5"><span class="text-gray-500">Overdue</span><span class="font-medium text-gray-700">16%</span></div>
+                <div class="h-2 rounded-full bg-gray-100"><div class="h-2 rounded-full bg-red-500" style="width:16%"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent invoices -->
+        <div class="bg-white border border-gray-100 rounded-xl2 shadow-soft overflow-hidden">
+          <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+            <h3 class="font-semibold text-gray-900 text-sm">Recent Invoices</h3>
+            <button onclick="showPage('invoices')" class="text-xs font-medium text-brand-600 hover:text-brand-700">View all</button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-left text-gray-400 text-xs border-b border-gray-100">
+                  <th class="font-medium px-5 py-3">Invoice</th>
+                  <th class="font-medium px-5 py-3">Client</th>
+                  <th class="font-medium px-5 py-3">Date</th>
+                  <th class="font-medium px-5 py-3">Due Date</th>
+                  <th class="font-medium px-5 py-3">Amount</th>
+                  <th class="font-medium px-5 py-3">Status</th>
+                  <th class="font-medium px-5 py-3 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-50">
+                <tr class="hover:bg-gray-50/60">
+                  <td class="px-5 py-3.5 font-medium text-gray-800">INV-2026-001</td>
+                  <td class="px-5 py-3.5 text-gray-500">PT ABC Indonesia</td>
+                  <td class="px-5 py-3.5 text-gray-500">Aug 10, 2026</td>
+                  <td class="px-5 py-3.5 text-gray-500">Aug 30, 2026</td>
+                  <td class="px-5 py-3.5 text-gray-800">Rp 5.000.000</td>
+                  <td class="px-5 py-3.5"><span class="status-badge bg-emerald-50 text-emerald-600">PAID</span></td>
+                  <td class="px-5 py-3.5 text-right">
+                    <button onclick="showPage('invoice-detail')" class="text-gray-400 hover:text-brand-600"><iconify-icon icon="solar:eye-linear" class="text-lg"></iconify-icon></button>
+                  </td>
+                </tr>
+                <tr class="hover:bg-gray-50/60">
+                  <td class="px-5 py-3.5 font-medium text-gray-800">INV-2026-002</td>
+                  <td class="px-5 py-3.5 text-gray-500">John Doe</td>
+                  <td class="px-5 py-3.5 text-gray-500">Aug 12, 2026</td>
+                  <td class="px-5 py-3.5 text-gray-500">Sep 1, 2026</td>
+                  <td class="px-5 py-3.5 text-gray-800">Rp 3.500.000</td>
+                  <td class="px-5 py-3.5"><span class="status-badge bg-amber-50 text-amber-600">UNPAID</span></td>
+                  <td class="px-5 py-3.5 text-right">
+                    <button onclick="showPage('invoice-detail')" class="text-gray-400 hover:text-brand-600"><iconify-icon icon="solar:eye-linear" class="text-lg"></iconify-icon></button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ PAGE: CLIENTS ============ -->
+      <div id="page-clients" class="page-content">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+          <div>
+            <h1 class="text-xl font-semibold text-gray-900">Clients</h1>
+            <p class="text-sm text-gray-400 mt-0.5">Manage your clients and their information.</p>
+          </div>
+          <button onclick="openModal('modal-add-client')" class="inline-flex items-center gap-2 bg-brand-600 text-white text-sm font-medium px-4 py-2.5 rounded-xl shadow-soft hover:bg-brand-700 transition w-fit">
+            <iconify-icon icon="solar:add-circle-bold"></iconify-icon> Add Client
+          </button>
+        </div>
+
+        <div class="bg-white border border-gray-100 rounded-xl2 shadow-soft overflow-hidden">
+          <div class="p-4 border-b border-gray-100">
+            <div class="relative max-w-xs">
+              <iconify-icon icon="solar:magnifer-linear" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></iconify-icon>
+              <input type="text" placeholder="Search clients..." class="w-full pl-9 pr-3 py-2 rounded-xl bg-gray-50 border border-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200 placeholder:text-gray-300">
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-left text-gray-400 text-xs border-b border-gray-100">
+                  <th class="font-medium px-5 py-3">Client</th>
+                  <th class="font-medium px-5 py-3">Company</th>
+                  <th class="font-medium px-5 py-3">Email</th>
+                  <th class="font-medium px-5 py-3">Phone</th>
+                  <th class="font-medium px-5 py-3">Invoices</th>
+                  <th class="font-medium px-5 py-3">Total Revenue</th>
+                  <th class="font-medium px-5 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-50">
+                <tr class="hover:bg-gray-50/60 cursor-pointer" onclick="showPage('client-detail')">
+                  <td class="px-5 py-3.5">
+                    <div class="flex items-center gap-2.5">
+                      <div class="w-8 h-8 rounded-full bg-brand-100 flex items-center justify-center text-brand-700 text-xs font-semibold">J</div>
+                      <span class="font-medium text-gray-800">John Doe</span>
+                    </div>
+                  </td>
+                  <td class="px-5 py-3.5 text-gray-500">ABC Company</td>
+                  <td class="px-5 py-3.5 text-gray-500">john@example.com</td>
+                  <td class="px-5 py-3.5 text-gray-500">+62 812 3456 7890</td>
+                  <td class="px-5 py-3.5 text-gray-500">4</td>
+                  <td class="px-5 py-3.5 text-gray-800">Rp 12.000.000</td>
+                  <td class="px-5 py-3.5 text-right" onclick="event.stopPropagation()">
+                    <div class="flex justify-end gap-1.5">
+                      <button class="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400"><iconify-icon icon="solar:pen-2-linear"></iconify-icon></button>
+                      <button onclick="openModal('modal-delete')" class="w-8 h-8 rounded-lg hover:bg-red-50 flex items-center justify-center text-gray-400 hover:text-red-500"><iconify-icon icon="solar:trash-bin-trash-linear"></iconify-icon></button>
+                    </div>
+                  </td>
+                </tr>
+                <tr class="hover:bg-gray-50/60 cursor-pointer" onclick="showPage('client-detail')">
+                  <td class="px-5 py-3.5">
+                    <div class="flex items-center gap-2.5">
+                      <div class="w-8 h-8 rounded-full bg-brand-100 flex items-center justify-center text-brand-700 text-xs font-semibold">P</div>
+                      <span class="font-medium text-gray-800">PT ABC Indonesia</span>
+                    </div>
+                  </td>
+                  <td class="px-5 py-3.5 text-gray-500">PT ABC Indonesia</td>
+                  <td class="px-5 py-3.5 text-gray-500">contact@abc.co.id</td>
+                  <td class="px-5 py-3.5 text-gray-500">+62 811 2233 4455</td>
+                  <td class="px-5 py-3.5 text-gray-500">7</td>
+                  <td class="px-5 py-3.5 text-gray-800">Rp 28.500.000</td>
+                  <td class="px-5 py-3.5 text-right" onclick="event.stopPropagation()">
+                    <div class="flex justify-end gap-1.5">
+                      <button class="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400"><iconify-icon icon="solar:pen-2-linear"></iconify-icon></button>
+                      <button onclick="openModal('modal-delete')" class="w-8 h-8 rounded-lg hover:bg-red-50 flex items-center justify-center text-gray-400 hover:text-red-500"><iconify-icon icon="solar:trash-bin-trash-linear"></iconify-icon></button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="flex items-center justify-between px-5 py-3.5 border-t border-gray-100 text-xs text-gray-400">
+            <span>Showing 1–2 of 2 clients</span>
+            <div class="flex items-center gap-1">
+              <button class="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50"><iconify-icon icon="solar:alt-arrow-left-linear"></iconify-icon></button>
+              <button class="w-7 h-7 rounded-lg bg-brand-600 text-white flex items-center justify-center">1</button>
+              <button class="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50"><iconify-icon icon="solar:alt-arrow-right-linear"></iconify-icon></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ PAGE: CLIENT DETAIL ============ -->
+      <div id="page-client-detail" class="page-content">
+        <button onclick="showPage('clients')" class="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-600 mb-4">
+          <iconify-icon icon="solar:arrow-left-linear"></iconify-icon> Back to Clients
+        </button>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <div class="lg:col-span-1 bg-white border border-gray-100 rounded-xl2 shadow-soft p-5 h-fit">
+            <div class="flex items-center gap-3 mb-5">
+              <div class="w-12 h-12 rounded-full bg-brand-100 flex items-center justify-center text-brand-700 font-semibold">J</div>
+              <div>
+                <h3 class="font-semibold text-gray-900">John Doe</h3>
+                <p class="text-xs text-gray-400">ABC Company</p>
+              </div>
+            </div>
+            <div class="space-y-3 text-sm">
+              <div class="flex items-center gap-2.5 text-gray-500"><iconify-icon icon="solar:letter-linear" class="text-gray-400"></iconify-icon> john@example.com</div>
+              <div class="flex items-center gap-2.5 text-gray-500"><iconify-icon icon="solar:phone-linear" class="text-gray-400"></iconify-icon> +62 812 3456 7890</div>
+              <div class="flex items-center gap-2.5 text-gray-500"><iconify-icon icon="solar:map-point-linear" class="text-gray-400"></iconify-icon> Jakarta, Indonesia</div>
+            </div>
+            <button class="w-full mt-5 py-2 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50">Edit Client</button>
+          </div>
+
+          <div class="lg:col-span-2 space-y-5">
+            <div class="grid grid-cols-3 gap-4">
+              <div class="bg-white border border-gray-100 rounded-xl2 shadow-soft p-4">
+                <p class="text-xs text-gray-400 mb-1">Total Invoices</p>
+                <p class="text-lg font-semibold text-gray-900">7</p>
+              </div>
+              <div class="bg-white border border-gray-100 rounded-xl2 shadow-soft p-4">
+                <p class="text-xs text-gray-400 mb-1">Total Paid</p>
+                <p class="text-lg font-semibold text-emerald-600">Rp 20.000.000</p>
+              </div>
+              <div class="bg-white border border-gray-100 rounded-xl2 shadow-soft p-4">
+                <p class="text-xs text-gray-400 mb-1">Outstanding</p>
+                <p class="text-lg font-semibold text-amber-600">Rp 8.500.000</p>
+              </div>
+            </div>
+
+            <div class="bg-white border border-gray-100 rounded-xl2 shadow-soft overflow-hidden">
+              <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                <h3 class="font-semibold text-gray-900 text-sm">Invoice History</h3>
+                <button onclick="showPage('invoice-create')" class="inline-flex items-center gap-1.5 text-xs font-medium bg-brand-50 text-brand-600 px-3 py-1.5 rounded-lg hover:bg-brand-100">
+                  <iconify-icon icon="solar:add-circle-bold"></iconify-icon> Create Invoice
+                </button>
+              </div>
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="text-left text-gray-400 text-xs border-b border-gray-100">
+                    <th class="font-medium px-5 py-3">Invoice</th>
+                    <th class="font-medium px-5 py-3">Date</th>
+                    <th class="font-medium px-5 py-3">Amount</th>
+                    <th class="font-medium px-5 py-3">Status</th>
+                    <th class="font-medium px-5 py-3 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50">
+                  <tr class="hover:bg-gray-50/60">
+                    <td class="px-5 py-3.5 font-medium text-gray-800">INV-2026-001</td>
+                    <td class="px-5 py-3.5 text-gray-500">Aug 10, 2026</td>
+                    <td class="px-5 py-3.5 text-gray-800">Rp 5.000.000</td>
+                    <td class="px-5 py-3.5"><span class="status-badge bg-emerald-50 text-emerald-600">PAID</span></td>
+                    <td class="px-5 py-3.5 text-right"><button onclick="showPage('invoice-detail')" class="text-gray-400 hover:text-brand-600"><iconify-icon icon="solar:eye-linear" class="text-lg"></iconify-icon></button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ PAGE: SERVICES ============ -->
+      <div id="page-services" class="page-content">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+          <div>
+            <h1 class="text-xl font-semibold text-gray-900">Services</h1>
+            <p class="text-sm text-gray-400 mt-0.5">Manage the services you offer to clients.</p>
+          </div>
+          <button onclick="openModal('modal-add-service')" class="inline-flex items-center gap-2 bg-brand-600 text-white text-sm font-medium px-4 py-2.5 rounded-xl shadow-soft hover:bg-brand-700 transition w-fit">
+            <iconify-icon icon="solar:add-circle-bold"></iconify-icon> Add Service
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div class="bg-white border border-gray-100 rounded-xl2 shadow-soft p-5">
+            <div class="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center mb-4"><iconify-icon icon="solar:code-2-bold-duotone" class="text-brand-600 text-lg"></iconify-icon></div>
+            <h3 class="font-semibold text-gray-900 mb-1">Web Development</h3>
+            <p class="text-xs text-gray-400 mb-4">Website development and implementation</p>
+            <div class="flex items-center justify-between">
+              <span class="font-semibold text-gray-800">Rp 3.000.000</span>
+              <div class="flex gap-1.5">
+                <button class="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400"><iconify-icon icon="solar:pen-2-linear"></iconify-icon></button>
+                <button onclick="openModal('modal-delete')" class="w-8 h-8 rounded-lg hover:bg-red-50 flex items-center justify-center text-gray-400 hover:text-red-500"><iconify-icon icon="solar:trash-bin-trash-linear"></iconify-icon></button>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white border border-gray-100 rounded-xl2 shadow-soft p-5">
+            <div class="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center mb-4"><iconify-icon icon="solar:widget-4-bold-duotone" class="text-brand-600 text-lg"></iconify-icon></div>
+            <h3 class="font-semibold text-gray-900 mb-1">Landing Page</h3>
+            <p class="text-xs text-gray-400 mb-4">Single-page site for campaigns or products</p>
+            <div class="flex items-center justify-between">
+              <span class="font-semibold text-gray-800">Rp 1.500.000</span>
+              <div class="flex gap-1.5">
+                <button class="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400"><iconify-icon icon="solar:pen-2-linear"></iconify-icon></button>
+                <button onclick="openModal('modal-delete')" class="w-8 h-8 rounded-lg hover:bg-red-50 flex items-center justify-center text-gray-400 hover:text-red-500"><iconify-icon icon="solar:trash-bin-trash-linear"></iconify-icon></button>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white border border-gray-100 rounded-xl2 shadow-soft p-5">
+            <div class="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center mb-4"><iconify-icon icon="solar:pallete-2-bold-duotone" class="text-brand-600 text-lg"></iconify-icon></div>
+            <h3 class="font-semibold text-gray-900 mb-1">UI/UX Design</h3>
+            <p class="text-xs text-gray-400 mb-4">Interface design and prototyping</p>
+            <div class="flex items-center justify-between">
+              <span class="font-semibold text-gray-800">Rp 2.000.000</span>
+              <div class="flex gap-1.5">
+                <button class="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400"><iconify-icon icon="solar:pen-2-linear"></iconify-icon></button>
+                <button onclick="openModal('modal-delete')" class="w-8 h-8 rounded-lg hover:bg-red-50 flex items-center justify-center text-gray-400 hover:text-red-500"><iconify-icon icon="solar:trash-bin-trash-linear"></iconify-icon></button>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white border border-gray-100 rounded-xl2 shadow-soft p-5">
+            <div class="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center mb-4"><iconify-icon icon="solar:server-bold-duotone" class="text-brand-600 text-lg"></iconify-icon></div>
+            <h3 class="font-semibold text-gray-900 mb-1">Website Maintenance</h3>
+            <p class="text-xs text-gray-400 mb-4">Monthly updates and bug fixes</p>
+            <div class="flex items-center justify-between">
+              <span class="font-semibold text-gray-800">Rp 500.000</span>
+              <div class="flex gap-1.5">
+                <button class="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400"><iconify-icon icon="solar:pen-2-linear"></iconify-icon></button>
+                <button onclick="openModal('modal-delete')" class="w-8 h-8 rounded-lg hover:bg-red-50 flex items-center justify-center text-gray-400 hover:text-red-500"><iconify-icon icon="solar:trash-bin-trash-linear"></iconify-icon></button>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white border border-gray-100 rounded-xl2 shadow-soft p-5">
+            <div class="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center mb-4"><iconify-icon icon="solar:cloud-bold-duotone" class="text-brand-600 text-lg"></iconify-icon></div>
+            <h3 class="font-semibold text-gray-900 mb-1">Hosting Setup</h3>
+            <p class="text-xs text-gray-400 mb-4">Server and domain configuration</p>
+            <div class="flex items-center justify-between">
+              <span class="font-semibold text-gray-800">Rp 300.000</span>
+              <div class="flex gap-1.5">
+                <button class="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400"><iconify-icon icon="solar:pen-2-linear"></iconify-icon></button>
+                <button onclick="openModal('modal-delete')" class="w-8 h-8 rounded-lg hover:bg-red-50 flex items-center justify-center text-gray-400 hover:text-red-500"><iconify-icon icon="solar:trash-bin-trash-linear"></iconify-icon></button>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white border border-gray-100 rounded-xl2 shadow-soft p-5">
+            <div class="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center mb-4"><iconify-icon icon="solar:chat-round-dots-bold-duotone" class="text-brand-600 text-lg"></iconify-icon></div>
+            <h3 class="font-semibold text-gray-900 mb-1">Consultation</h3>
+            <p class="text-xs text-gray-400 mb-4">Technical strategy session, per hour</p>
+            <div class="flex items-center justify-between">
+              <span class="font-semibold text-gray-800">Rp 250.000</span>
+              <div class="flex gap-1.5">
+                <button class="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400"><iconify-icon icon="solar:pen-2-linear"></iconify-icon></button>
+                <button onclick="openModal('modal-delete')" class="w-8 h-8 rounded-lg hover:bg-red-50 flex items-center justify-center text-gray-400 hover:text-red-500"><iconify-icon icon="solar:trash-bin-trash-linear"></iconify-icon></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ PAGE: INVOICES ============ -->
+      <div id="page-invoices" class="page-content">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+          <div>
+            <h1 class="text-xl font-semibold text-gray-900">Invoices</h1>
+            <p class="text-sm text-gray-400 mt-0.5">Create and manage invoices for your clients.</p>
+          </div>
+          <button onclick="showPage('invoice-create')" class="inline-flex items-center gap-2 bg-brand-600 text-white text-sm font-medium px-4 py-2.5 rounded-xl shadow-soft hover:bg-brand-700 transition w-fit">
+            <iconify-icon icon="solar:add-circle-bold"></iconify-icon> Create Invoice
+          </button>
+        </div>
+
+        <div class="bg-white border border-gray-100 rounded-xl2 shadow-soft overflow-hidden">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 p-4 border-b border-gray-100">
+            <div class="relative max-w-xs w-full">
+              <iconify-icon icon="solar:magnifer-linear" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></iconify-icon>
+              <input type="text" placeholder="Search invoices..." class="w-full pl-9 pr-3 py-2 rounded-xl bg-gray-50 border border-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200 placeholder:text-gray-300">
+            </div>
+            <div class="flex flex-wrap gap-1.5">
+              <button class="px-3 py-1.5 rounded-lg text-xs font-medium bg-brand-600 text-white">All</button>
+              <button class="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-500 hover:bg-gray-50">Draft</button>
+              <button class="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-500 hover:bg-gray-50">Sent</button>
+              <button class="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-500 hover:bg-gray-50">Unpaid</button>
+              <button class="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-500 hover:bg-gray-50">Paid</button>
+              <button class="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-500 hover:bg-gray-50">Overdue</button>
+              <button class="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-500 hover:bg-gray-50">Cancelled</button>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-left text-gray-400 text-xs border-b border-gray-100">
+                  <th class="font-medium px-5 py-3">Invoice</th>
+                  <th class="font-medium px-5 py-3">Client</th>
+                  <th class="font-medium px-5 py-3">Date</th>
+                  <th class="font-medium px-5 py-3">Due Date</th>
+                  <th class="font-medium px-5 py-3">Amount</th>
+                  <th class="font-medium px-5 py-3">Status</th>
+                  <th class="font-medium px-5 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-50">
+                <tr class="hover:bg-gray-50/60">
+                  <td class="px-5 py-3.5 font-medium text-gray-800">INV-2026-001</td>
+                  <td class="px-5 py-3.5 text-gray-500">PT ABC Indonesia</td>
+                  <td class="px-5 py-3.5 text-gray-500">Aug 10, 2026</td>
+                  <td class="px-5 py-3.5 text-gray-500">Aug 30, 2026</td>
+                  <td class="px-5 py-3.5 text-gray-800">Rp 5.000.000</td>
+                  <td class="px-5 py-3.5"><span class="status-badge bg-emerald-50 text-emerald-600">PAID</span></td>
+                  <td class="px-5 py-3.5 text-right">
+                    <div class="flex justify-end gap-1.5">
+                      <button onclick="showPage('invoice-detail')" class="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400"><iconify-icon icon="solar:eye-linear"></iconify-icon></button>
+                      <button class="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400"><iconify-icon icon="solar:pen-2-linear"></iconify-icon></button>
+                    </div>
+                  </td>
+                </tr>
+                <tr class="hover:bg-gray-50/60">
+                  <td class="px-5 py-3.5 font-medium text-gray-800">INV-2026-002</td>
+                  <td class="px-5 py-3.5 text-gray-500">John Doe</td>
+                  <td class="px-5 py-3.5 text-gray-500">Aug 12, 2026</td>
+                  <td class="px-5 py-3.5 text-gray-500">Sep 1, 2026</td>
+                  <td class="px-5 py-3.5 text-gray-800">Rp 3.500.000</td>
+                  <td class="px-5 py-3.5"><span class="status-badge bg-amber-50 text-amber-600">UNPAID</span></td>
+                  <td class="px-5 py-3.5 text-right">
+                    <div class="flex justify-end gap-1.5">
+                      <button onclick="showPage('invoice-detail')" class="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400"><iconify-icon icon="solar:eye-linear"></iconify-icon></button>
+                      <button class="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400"><iconify-icon icon="solar:pen-2-linear"></iconify-icon></button>
+                    </div>
+                  </td>
+                </tr>
+                <tr class="hover:bg-gray-50/60">
+                  <td class="px-5 py-3.5 font-medium text-gray-800">INV-2026-003</td>
+                  <td class="px-5 py-3.5 text-gray-500">PT Indotek Prima</td>
+                  <td class="px-5 py-3.5 text-gray-500">Jul 28, 2026</td>
+                  <td class="px-5 py-3.5 text-gray-500">Aug 12, 2026</td>
+                  <td class="px-5 py-3.5 text-gray-800">Rp 2.500.000</td>
+                  <td class="px-5 py-3.5"><span class="status-badge bg-red-50 text-red-500">OVERDUE</span></td>
+                  <td class="px-5 py-3.5 text-right">
+                    <div class="flex justify-end gap-1.5">
+                      <button onclick="showPage('invoice-detail')" class="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400"><iconify-icon icon="solar:eye-linear"></iconify-icon></button>
+                      <button class="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400"><iconify-icon icon="solar:pen-2-linear"></iconify-icon></button>
+                    </div>
+                  </td>
+                </tr>
+                <tr class="hover:bg-gray-50/60">
+                  <td class="px-5 py-3.5 font-medium text-gray-800">INV-2026-004</td>
+                  <td class="px-5 py-3.5 text-gray-500">EBR Event</td>
+                  <td class="px-5 py-3.5 text-gray-500">Aug 14, 2026</td>
+                  <td class="px-5 py-3.5 text-gray-500">Sep 5, 2026</td>
+                  <td class="px-5 py-3.5 text-gray-800">Rp 1.800.000</td>
+                  <td class="px-5 py-3.5"><span class="status-badge bg-gray-100 text-gray-500">DRAFT</span></td>
+                  <td class="px-5 py-3.5 text-right">
+                    <div class="flex justify-end gap-1.5">
+                      <button onclick="showPage('invoice-detail')" class="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400"><iconify-icon icon="solar:eye-linear"></iconify-icon></button>
+                      <button class="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400"><iconify-icon icon="solar:pen-2-linear"></iconify-icon></button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="flex items-center justify-between px-5 py-3.5 border-t border-gray-100 text-xs text-gray-400">
+            <span>Showing 1–4 of 12 invoices</span>
+            <div class="flex items-center gap-1">
+              <button class="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50"><iconify-icon icon="solar:alt-arrow-left-linear"></iconify-icon></button>
+              <button class="w-7 h-7 rounded-lg bg-brand-600 text-white flex items-center justify-center">1</button>
+              <button class="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50">2</button>
+              <button class="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50">3</button>
+              <button class="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50"><iconify-icon icon="solar:alt-arrow-right-linear"></iconify-icon></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ PAGE: CREATE INVOICE ============ -->
+      <div id="page-invoice-create" class="page-content">
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <button onclick="showPage('invoices')" class="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 mb-1.5">
+              <iconify-icon icon="solar:arrow-left-linear"></iconify-icon> Back to Invoices
+            </button>
+            <h1 class="text-xl font-semibold text-gray-900">Create Invoice</h1>
+          </div>
+          <div class="flex gap-2.5">
+            <button class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50">Save Draft</button>
+            <button onclick="showPage('invoice-detail')" class="px-4 py-2.5 rounded-xl bg-gray-900 text-white text-sm font-medium hover:bg-gray-800">Preview</button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <div class="lg:col-span-2 space-y-5">
+            <div class="bg-white border border-gray-100 rounded-xl2 shadow-soft p-5">
+              <h3 class="font-semibold text-gray-900 text-sm mb-4">Invoice Information</h3>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-medium text-gray-500 mb-1.5">Invoice Number</label>
+                  <input type="text" value="INV-2026-001" class="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm bg-gray-50 text-gray-500">
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-500 mb-1.5">Client</label>
+                  <div class="relative">
+                    <select class="w-full appearance-none px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200">
+                      <option>Select Client</option>
+                      <option>John Doe</option>
+                      <option>PT ABC Indonesia</option>
+                    </select>
+                    <iconify-icon icon="solar:alt-arrow-down-linear" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></iconify-icon>
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-500 mb-1.5">Invoice Date</label>
+                  <input type="date" class="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200">
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-500 mb-1.5">Due Date</label>
+                  <input type="date" class="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200">
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-white border border-gray-100 rounded-xl2 shadow-soft p-5">
+              <h3 class="font-semibold text-gray-900 text-sm mb-4">Invoice Items</h3>
+              <div class="hidden sm:grid grid-cols-12 gap-2 text-xs font-medium text-gray-400 px-1 mb-2">
+                <span class="col-span-5">Description</span>
+                <span class="col-span-2">Quantity</span>
+                <span class="col-span-2">Price</span>
+                <span class="col-span-3">Total</span>
+              </div>
+              <div class="space-y-2.5">
+                <div class="grid grid-cols-12 gap-2 items-center">
+                  <input type="text" value="Website Development" class="col-span-12 sm:col-span-5 px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200">
+                  <input type="number" value="1" class="col-span-4 sm:col-span-2 px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200">
+                  <input type="text" value="Rp3.000.000" class="col-span-5 sm:col-span-2 px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200">
+                  <span class="col-span-2 sm:col-span-2 text-sm font-medium text-gray-700 px-1">Rp3.000.000</span>
+                  <button class="col-span-1 text-gray-300 hover:text-red-500"><iconify-icon icon="solar:trash-bin-trash-linear"></iconify-icon></button>
+                </div>
+                <div class="grid grid-cols-12 gap-2 items-center">
+                  <input type="text" value="Hosting" class="col-span-12 sm:col-span-5 px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200">
+                  <input type="number" value="1" class="col-span-4 sm:col-span-2 px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200">
+                  <input type="text" value="Rp500.000" class="col-span-5 sm:col-span-2 px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200">
+                  <span class="col-span-2 sm:col-span-2 text-sm font-medium text-gray-700 px-1">Rp500.000</span>
+                  <button class="col-span-1 text-gray-300 hover:text-red-500"><iconify-icon icon="solar:trash-bin-trash-linear"></iconify-icon></button>
+                </div>
+              </div>
+              <button class="mt-4 inline-flex items-center gap-1.5 text-xs font-medium text-brand-600 hover:text-brand-700">
+                <iconify-icon icon="solar:add-circle-bold"></iconify-icon> Add Item
+              </button>
+            </div>
+
+            <div class="bg-white border border-gray-100 rounded-xl2 shadow-soft p-5">
+              <h3 class="font-semibold text-gray-900 text-sm mb-4">Additional Information</h3>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label class="block text-xs font-medium text-gray-500 mb-1.5">Payment Method</label>
+                  <input type="text" placeholder="Bank Transfer" class="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200 placeholder:text-gray-300">
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-500 mb-1.5">Payment Information</label>
+                  <input type="text" placeholder="BCA - 1234567890" class="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200 placeholder:text-gray-300">
+                </div>
+              </div>
+              <label class="block text-xs font-medium text-gray-500 mb-1.5">Notes</label>
+              <textarea rows="3" placeholder="Thank you for your business." class="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200 placeholder:text-gray-300"></textarea>
+            </div>
+          </div>
+
+          <div class="lg:col-span-1">
+            <div class="bg-white border border-gray-100 rounded-xl2 shadow-soft p-5 sticky top-24">
+              <h3 class="font-semibold text-gray-900 text-sm mb-4">Summary</h3>
+              <div class="space-y-2.5 text-sm">
+                <div class="flex justify-between"><span class="text-gray-400">Subtotal</span><span class="text-gray-700">Rp 3.500.000</span></div>
+                <div class="flex justify-between"><span class="text-gray-400">Discount</span><span class="text-gray-700">Rp 200.000</span></div>
+                <div class="flex justify-between"><span class="text-gray-400">Tax</span><span class="text-gray-700">Rp 330.000</span></div>
+                <div class="border-t border-dashed border-gray-200 my-2"></div>
+                <div class="flex justify-between text-base"><span class="font-semibold text-gray-900">Total</span><span class="font-semibold text-brand-600">Rp 3.630.000</span></div>
+              </div>
+              <div class="mt-6 space-y-2.5">
+                <button class="w-full py-2.5 rounded-xl bg-brand-600 text-white text-sm font-medium shadow-soft hover:bg-brand-700">Create Invoice</button>
+                <button class="w-full py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50">Save Draft</button>
+                <button onclick="showPage('invoices')" class="w-full py-2.5 rounded-xl text-sm font-medium text-gray-400 hover:text-gray-600">Cancel</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ PAGE: INVOICE DETAIL ============ -->
+      <div id="page-invoice-detail" class="page-content">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+          <div>
+            <button onclick="showPage('invoices')" class="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 mb-1.5">
+              <iconify-icon icon="solar:arrow-left-linear"></iconify-icon> Back to Invoices
+            </button>
+            <h1 class="text-xl font-semibold text-gray-900">Invoice INV-2026-001</h1>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button class="px-3.5 py-2 rounded-xl border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 flex items-center gap-1.5"><iconify-icon icon="solar:pen-2-linear"></iconify-icon> Edit</button>
+            <button class="px-3.5 py-2 rounded-xl border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 flex items-center gap-1.5"><iconify-icon icon="solar:download-linear"></iconify-icon> Download PDF</button>
+            <button class="px-3.5 py-2 rounded-xl border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 flex items-center gap-1.5"><iconify-icon icon="solar:printer-linear"></iconify-icon> Print</button>
+            <button class="px-3.5 py-2 rounded-xl bg-emerald-600 text-white text-xs font-medium hover:bg-emerald-700 flex items-center gap-1.5"><iconify-icon icon="solar:check-circle-bold"></iconify-icon> Mark as Paid</button>
+          </div>
+        </div>
+
+        <div class="bg-white border border-gray-100 rounded-xl2 shadow-card p-6 sm:p-10 max-w-3xl mx-auto">
+          <div class="flex flex-col sm:flex-row sm:justify-between gap-6 mb-10">
+            <div>
+              <div class="flex items-center gap-2 mb-2">
+                <div class="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center"><iconify-icon icon="solar:bill-list-bold" class="text-white text-sm"></iconify-icon></div>
+                <span class="font-semibold text-gray-900">RIDHO SOFTWARE</span>
+              </div>
+              <p class="text-xs text-gray-400 leading-relaxed">Web Development & Software<br>hello@example.com<br>+62 812 0000 0000</p>
+            </div>
+            <div class="sm:text-right">
+              <h2 class="text-2xl font-semibold text-gray-900 tracking-wide">INVOICE</h2>
+              <p class="text-sm text-gray-400">INV-2026-001</p>
+              <span class="status-badge bg-emerald-50 text-emerald-600 mt-2 inline-flex">PAID</span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8 pb-8 border-b border-gray-100">
+            <div>
+              <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Bill To</p>
+              <p class="text-sm font-medium text-gray-800">PT ABC Indonesia</p>
+              <p class="text-xs text-gray-400">john@example.com</p>
+              <p class="text-xs text-gray-400">Jakarta, Indonesia</p>
+            </div>
+            <div>
+              <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Invoice Date</p>
+              <p class="text-sm text-gray-700">Aug 15, 2026</p>
+            </div>
+            <div>
+              <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Due Date</p>
+              <p class="text-sm text-gray-700">Aug 30, 2026</p>
+            </div>
+          </div>
+
+          <table class="w-full text-sm mb-8">
+            <thead>
+              <tr class="text-left text-gray-400 text-xs border-b border-gray-100">
+                <th class="font-medium py-2.5">Description</th>
+                <th class="font-medium py-2.5 text-center">Qty</th>
+                <th class="font-medium py-2.5 text-right">Price</th>
+                <th class="font-medium py-2.5 text-right">Total</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-50">
+              <tr>
+                <td class="py-3 text-gray-700">Website Development</td>
+                <td class="py-3 text-center text-gray-500">1</td>
+                <td class="py-3 text-right text-gray-500">Rp3.000.000</td>
+                <td class="py-3 text-right text-gray-700 font-medium">Rp3.000.000</td>
+              </tr>
+              <tr>
+                <td class="py-3 text-gray-700">Hosting</td>
+                <td class="py-3 text-center text-gray-500">1</td>
+                <td class="py-3 text-right text-gray-500">Rp500.000</td>
+                <td class="py-3 text-right text-gray-700 font-medium">Rp500.000</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="flex justify-end mb-8">
+            <div class="w-full sm:w-64 space-y-2 text-sm">
+              <div class="flex justify-between text-gray-400"><span>Subtotal</span><span class="text-gray-600">Rp3.500.000</span></div>
+              <div class="flex justify-between text-gray-400"><span>Discount</span><span class="text-gray-600">Rp200.000</span></div>
+              <div class="flex justify-between text-gray-400"><span>Tax</span><span class="text-gray-600">Rp330.000</span></div>
+              <div class="flex justify-between pt-2 border-t border-gray-100 text-base"><span class="font-semibold text-gray-900">TOTAL</span><span class="font-semibold text-brand-600">Rp3.630.000</span></div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-6 border-t border-dashed border-gray-200">
+            <div>
+              <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Payment Information</p>
+              <p class="text-sm text-gray-700">Bank BCA</p>
+              <p class="text-sm text-gray-700">1234567890</p>
+              <p class="text-sm text-gray-700">Ridho Hidayat</p>
+            </div>
+            <div>
+              <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Notes</p>
+              <p class="text-sm text-gray-500">Thank you for your business.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ PAGE: SETTINGS ============ -->
+      <div id="page-settings" class="page-content">
+        <div class="mb-6">
+          <h1 class="text-xl font-semibold text-gray-900">Settings</h1>
+          <p class="text-sm text-gray-400 mt-0.5">Manage your account and business preferences.</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-5">
+          <div class="lg:col-span-1">
+            <div class="bg-white border border-gray-100 rounded-xl2 shadow-soft p-2 flex lg:flex-col gap-1 overflow-x-auto">
+              <button onclick="showSettingsTab('profile')" data-tab="profile" class="settings-tab flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-sm font-medium text-left shrink-0">
+                <iconify-icon icon="solar:user-bold-duotone"></iconify-icon> Profile
+              </button>
+              <button onclick="showSettingsTab('business')" data-tab="business" class="settings-tab flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-sm font-medium text-left shrink-0">
+                <iconify-icon icon="solar:buildings-2-bold-duotone"></iconify-icon> Business
+              </button>
+              <button onclick="showSettingsTab('payment')" data-tab="payment" class="settings-tab flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-sm font-medium text-left shrink-0">
+                <iconify-icon icon="solar:card-bold-duotone"></iconify-icon> Payment
+              </button>
+            </div>
+          </div>
+
+          <div class="lg:col-span-3">
+            <div id="settings-profile" class="settings-panel bg-white border border-gray-100 rounded-xl2 shadow-soft p-6">
+              <h3 class="font-semibold text-gray-900 mb-5">Profile</h3>
+              <div class="flex items-center gap-4 mb-6">
+                <div class="w-16 h-16 rounded-full bg-brand-100 flex items-center justify-center text-brand-700 font-semibold text-xl">R</div>
+                <button class="px-3.5 py-2 rounded-xl border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50">Change Avatar</button>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-medium text-gray-500 mb-1.5">Full Name</label>
+                  <input type="text" value="Ridho Hidayat" class="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200">
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-500 mb-1.5">Email</label>
+                  <input type="email" value="ridho@example.com" class="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200">
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-500 mb-1.5">Phone</label>
+                  <input type="text" value="+62 812 0000 0000" class="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200">
+                </div>
+              </div>
+              <button class="mt-6 px-5 py-2.5 rounded-xl bg-brand-600 text-white text-sm font-medium hover:bg-brand-700">Save Changes</button>
+            </div>
+
+            <div id="settings-business" class="settings-panel bg-white border border-gray-100 rounded-xl2 shadow-soft p-6 hidden">
+              <h3 class="font-semibold text-gray-900 mb-5">Business</h3>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-medium text-gray-500 mb-1.5">Business Name</label>
+                  <input type="text" value="Ridho Software" class="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200">
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-500 mb-1.5">Website</label>
+                  <input type="text" placeholder="https://ridhostudio.dev" class="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200 placeholder:text-gray-300">
+                </div>
+                <div class="sm:col-span-2">
+                  <label class="block text-xs font-medium text-gray-500 mb-1.5">Address</label>
+                  <input type="text" value="Pekanbaru, Riau, Indonesia" class="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200">
+                </div>
+                <div class="sm:col-span-2">
+                  <label class="block text-xs font-medium text-gray-500 mb-1.5">Logo</label>
+                  <div class="border border-dashed border-gray-200 rounded-xl p-6 flex flex-col items-center justify-center text-gray-400">
+                    <iconify-icon icon="solar:cloud-upload-linear" class="text-2xl mb-1.5"></iconify-icon>
+                    <p class="text-xs">Click or drag file to upload</p>
+                  </div>
+                </div>
+              </div>
+              <button class="mt-6 px-5 py-2.5 rounded-xl bg-brand-600 text-white text-sm font-medium hover:bg-brand-700">Save Changes</button>
+            </div>
+
+            <div id="settings-payment" class="settings-panel bg-white border border-gray-100 rounded-xl2 shadow-soft p-6 hidden">
+              <h3 class="font-semibold text-gray-900 mb-5">Payment</h3>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-medium text-gray-500 mb-1.5">Bank Name</label>
+                  <input type="text" value="Bank BCA" class="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200">
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-500 mb-1.5">Account Number</label>
+                  <input type="text" value="1234567890" class="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200">
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-gray-500 mb-1.5">Account Holder</label>
+                  <input type="text" value="Ridho Hidayat" class="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200">
+                </div>
+                <div class="sm:col-span-2">
+                  <label class="block text-xs font-medium text-gray-500 mb-1.5">Payment Notes</label>
+                  <textarea rows="3" placeholder="e.g. Please include invoice number as transfer note." class="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200 placeholder:text-gray-300"></textarea>
+                </div>
+              </div>
+              <button class="mt-6 px-5 py-2.5 rounded-xl bg-brand-600 text-white text-sm font-medium hover:bg-brand-700">Save Changes</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ PAGE: EMPTY / LOADING / ERROR STATES ============ -->
+      <div id="page-empty" class="page-content">
+        <h1 class="text-xl font-semibold text-gray-900 mb-6">UI States</h1>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+          <div class="bg-white border border-gray-100 rounded-xl2 shadow-soft p-10 flex flex-col items-center text-center">
+            <div class="w-16 h-16 rounded-2xl bg-brand-50 flex items-center justify-center mb-4">
+              <iconify-icon icon="solar:bill-list-bold-duotone" class="text-brand-500 text-3xl"></iconify-icon>
+            </div>
+            <h3 class="font-semibold text-gray-900 mb-1">No invoices yet</h3>
+            <p class="text-sm text-gray-400 max-w-xs mb-5">Create your first invoice to start managing your freelance payments.</p>
+            <button onclick="showPage('invoice-create')" class="inline-flex items-center gap-2 bg-brand-600 text-white text-sm font-medium px-4 py-2.5 rounded-xl shadow-soft hover:bg-brand-700">
+              <iconify-icon icon="solar:add-circle-bold"></iconify-icon> Create Invoice
+            </button>
+          </div>
+
+          <div class="bg-white border border-gray-100 rounded-xl2 shadow-soft p-6">
+            <h3 class="font-semibold text-gray-900 mb-4 text-sm">Loading state</h3>
+            <div class="space-y-3 animate-pulse">
+              <div class="h-4 bg-gray-100 rounded-lg w-3/4"></div>
+              <div class="h-4 bg-gray-100 rounded-lg w-full"></div>
+              <div class="h-4 bg-gray-100 rounded-lg w-5/6"></div>
+              <div class="h-24 bg-gray-100 rounded-xl w-full mt-4"></div>
+            </div>
+          </div>
+
+          <div class="bg-white border border-gray-100 rounded-xl2 shadow-soft p-10 flex flex-col items-center text-center">
+            <div class="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center mb-4">
+              <iconify-icon icon="solar:danger-triangle-bold-duotone" class="text-red-500 text-3xl"></iconify-icon>
+            </div>
+            <h3 class="font-semibold text-gray-900 mb-1">Something went wrong</h3>
+            <p class="text-sm text-gray-400 max-w-xs mb-5">We couldn't load your data. Please try again.</p>
+            <button class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50">Retry</button>
+          </div>
+
+          <div class="bg-white border border-gray-100 rounded-xl2 shadow-soft p-6">
+            <h3 class="font-semibold text-gray-900 mb-4 text-sm">Toast / Badges</h3>
+            <div class="flex items-center gap-3 bg-emerald-50 text-emerald-700 text-sm px-4 py-3 rounded-xl mb-4">
+              <iconify-icon icon="solar:check-circle-bold" class="text-lg"></iconify-icon> Invoice created successfully
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <span class="status-badge bg-gray-100 text-gray-500">DRAFT</span>
+              <span class="status-badge bg-blue-50 text-blue-600">SENT</span>
+              <span class="status-badge bg-amber-50 text-amber-600">UNPAID</span>
+              <span class="status-badge bg-emerald-50 text-emerald-600">PAID</span>
+              <span class="status-badge bg-red-50 text-red-500">OVERDUE</span>
+              <span class="status-badge bg-gray-100 text-gray-400">CANCELLED</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ================= MODAL: ADD CLIENT ================= -->
+<div id="modal-add-client" class="fixed inset-0 z-50 hidden items-center justify-center bg-gray-900/40 backdrop-blur-sm px-4">
+  <div class="bg-white rounded-xl2 shadow-card w-full max-w-md p-6">
+    <div class="flex items-center justify-between mb-5">
+      <h3 class="font-semibold text-gray-900">Add Client</h3>
+      <button onclick="closeModal('modal-add-client')" class="text-gray-400 hover:text-gray-600"><iconify-icon icon="solar:close-circle-linear" class="text-xl"></iconify-icon></button>
+    </div>
+    <div class="space-y-3.5 max-h-[65vh] overflow-y-auto pr-1">
+      <div>
+        <label class="block text-xs font-medium text-gray-500 mb-1.5">Full Name</label>
+        <input type="text" placeholder="John Doe" class="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200 placeholder:text-gray-300">
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-500 mb-1.5">Company</label>
+        <input type="text" placeholder="ABC Company" class="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200 placeholder:text-gray-300">
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-500 mb-1.5">Email</label>
+        <input type="email" placeholder="john@example.com" class="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200 placeholder:text-gray-300">
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-500 mb-1.5">Phone</label>
+        <input type="text" placeholder="+62 812 3456 7890" class="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200 placeholder:text-gray-300">
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-500 mb-1.5">Address</label>
+        <input type="text" placeholder="Jakarta, Indonesia" class="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200 placeholder:text-gray-300">
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-500 mb-1.5">Notes</label>
+        <textarea rows="2" placeholder="Optional notes about this client" class="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200 placeholder:text-gray-300"></textarea>
+      </div>
+    </div>
+    <div class="flex gap-2.5 mt-5">
+      <button onclick="closeModal('modal-add-client')" class="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50">Cancel</button>
+      <button onclick="closeModal('modal-add-client')" class="flex-1 py-2.5 rounded-xl bg-brand-600 text-white text-sm font-medium hover:bg-brand-700">Save Client</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL: ADD SERVICE ================= -->
+<div id="modal-add-service" class="fixed inset-0 z-50 hidden items-center justify-center bg-gray-900/40 backdrop-blur-sm px-4">
+  <div class="bg-white rounded-xl2 shadow-card w-full max-w-md p-6">
+    <div class="flex items-center justify-between mb-5">
+      <h3 class="font-semibold text-gray-900">Add Service</h3>
+      <button onclick="closeModal('modal-add-service')" class="text-gray-400 hover:text-gray-600"><iconify-icon icon="solar:close-circle-linear" class="text-xl"></iconify-icon></button>
+    </div>
+    <div class="space-y-3.5">
+      <div>
+        <label class="block text-xs font-medium text-gray-500 mb-1.5">Service Name</label>
+        <input type="text" placeholder="Web Development" class="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200 placeholder:text-gray-300">
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-500 mb-1.5">Description</label>
+        <textarea rows="2" placeholder="Website development and implementation" class="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200 placeholder:text-gray-300"></textarea>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-500 mb-1.5">Price</label>
+        <input type="text" placeholder="Rp 3.000.000" class="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200 placeholder:text-gray-300">
+      </div>
+    </div>
+    <div class="flex gap-2.5 mt-5">
+      <button onclick="closeModal('modal-add-service')" class="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50">Cancel</button>
+      <button onclick="closeModal('modal-add-service')" class="flex-1 py-2.5 rounded-xl bg-brand-600 text-white text-sm font-medium hover:bg-brand-700">Save Service</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL: DELETE CONFIRM ================= -->
+<div id="modal-delete" class="fixed inset-0 z-50 hidden items-center justify-center bg-gray-900/40 backdrop-blur-sm px-4">
+  <div class="bg-white rounded-xl2 shadow-card w-full max-w-sm p-6 text-center">
+    <div class="w-12 h-12 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-4">
+      <iconify-icon icon="solar:trash-bin-trash-bold-duotone" class="text-red-500 text-2xl"></iconify-icon>
+    </div>
+    <h3 class="font-semibold text-gray-900 mb-1">Delete this client?</h3>
+    <p class="text-sm text-gray-400 mb-5">This action cannot be undone.</p>
+    <div class="flex gap-2.5">
+      <button onclick="closeModal('modal-delete')" class="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50">Cancel</button>
+      <button onclick="closeModal('modal-delete')" class="flex-1 py-2.5 rounded-xl bg-red-500 text-white text-sm font-medium hover:bg-red-600">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const authPages = ['login', 'register'];
+  const pageTitles = {
+    dashboard: 'Dashboard', clients: 'Clients', 'client-detail': 'Client Details',
+    services: 'Services', invoices: 'Invoices', 'invoice-create': 'Create Invoice',
+    'invoice-detail': 'Invoice Detail', settings: 'Settings', empty: 'UI States'
+  };
+
+  function showPage(name) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.devbar-btn').forEach(b => b.classList.remove('active'));
+
+    if (authPages.includes(name)) {
+      document.getElementById('view-' + name).classList.add('active');
+    } else {
+      document.getElementById('app-shell').classList.add('active');
+      document.querySelectorAll('.page-content').forEach(p => p.classList.add('hidden'));
+      document.getElementById('page-' + name).classList.remove('hidden');
+      document.getElementById('page-title').textContent = pageTitles[name] || 'Dashboard';
+
+      document.querySelectorAll('.nav-link').forEach(l => {
+        const targets = (l.dataset.nav || '').split(' ');
+        l.classList.toggle('bg-brand-50', targets.includes(name));
+        l.classList.toggle('text-brand-600', targets.includes(name));
+        l.classList.toggle('text-gray-500', !targets.includes(name));
+      });
+    }
+
+    document.querySelectorAll('.devbar-btn').forEach(b => {
+      if (b.getAttribute('onclick') === `showPage('${name}')`) b.classList.add('active');
+    });
+
+    window.scrollTo(0, 0);
+  }
+
+  function showSettingsTab(tab) {
+    document.querySelectorAll('.settings-panel').forEach(p => p.classList.add('hidden'));
+    document.getElementById('settings-' + tab).classList.remove('hidden');
+    document.querySelectorAll('.settings-tab').forEach(t => {
+      const active = t.dataset.tab === tab;
+      t.classList.toggle('bg-brand-50', active);
+      t.classList.toggle('text-brand-600', active);
+      t.classList.toggle('text-gray-500', !active);
+    });
+  }
+
+  function openModal(id) {
+    const m = document.getElementById(id);
+    m.classList.remove('hidden');
+    m.classList.add('flex');
+  }
+  function closeModal(id) {
+    const m = document.getElementById(id);
+    m.classList.add('hidden');
+    m.classList.remove('flex');
+  }
+
+  // init
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.add('text-gray-500'));
+  showSettingsTab('profile');
+  showPage('dashboard');
+</script>
+
+</body>
+</html>
