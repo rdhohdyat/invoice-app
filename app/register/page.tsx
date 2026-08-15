@@ -35,11 +35,13 @@ export default function RegisterPage() {
     setIsLoading(true);
     const supabase = createClient();
 
+    const origin = window.location.origin;
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: { full_name: fullName },
+        emailRedirectTo: `${origin}/auth/callback`,
       },
     });
 

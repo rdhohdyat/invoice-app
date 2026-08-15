@@ -65,7 +65,7 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     <ToastContext.Provider value={{ showToast }}>
       {children}
       {/* Floating Toast Notification Container */}
-      <div className="fixed bottom-6 right-6 z-[99999] flex flex-col gap-2.5 max-w-sm w-full pointer-events-none">
+      <div className="fixed top-6 left-1/2 -translate-x-1/2 md:left-auto md:right-6 md:translate-x-0 z-[99999] flex flex-col gap-2.5 max-w-[calc(100vw-2rem)] md:max-w-sm w-full pointer-events-none">
         {toasts.map((t) => {
           const style = toastIcons[t.type];
           return (

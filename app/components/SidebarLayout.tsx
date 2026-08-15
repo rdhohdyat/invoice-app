@@ -209,13 +209,15 @@ export default function SidebarLayout({ children }: { children: React.ReactNode 
             >
               Settings
             </Link>
-            <Link
-              href="/login"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2 rounded-lg text-sm font-medium text-red-500 hover:bg-red-50"
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                handleLogout();
+              }}
+              className="w-full text-left block px-3 py-2 rounded-lg text-sm font-medium text-red-500 hover:bg-red-50 cursor-pointer"
             >
               Logout
-            </Link>
+            </button>
           </div>
         )}
 
