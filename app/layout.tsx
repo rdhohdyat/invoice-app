@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Fredoka } from "next/font/google";
+import { connection } from "next/server";
 import SidebarLayout from "./components/SidebarLayout";
 import { ToastProvider } from "./components/ui/Toast";
 import "./globals.css";
@@ -14,7 +15,8 @@ export const metadata: Metadata = {
   description: "Manage your clients, services, and invoices easily",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  await connection();
   return (
     <html
       lang="en"
