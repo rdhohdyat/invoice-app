@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Fredoka } from "next/font/google";
 import { connection } from "next/server";
 import SidebarLayout from "./components/SidebarLayout";
+import { ThemeProvider } from "./components/ThemeProvider";
 import { ToastProvider } from "./components/ui/Toast";
 import "./globals.css";
 
@@ -20,12 +21,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${fredoka.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans">
-        <ToastProvider>
-          <SidebarLayout>{children}</SidebarLayout>
-        </ToastProvider>
+        <ThemeProvider>
+          <ToastProvider>
+            <SidebarLayout>{children}</SidebarLayout>
+          </ToastProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
