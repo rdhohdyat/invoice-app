@@ -5,7 +5,7 @@ import {
   Text,
   View,
   StyleSheet,
-  Font,
+  Image,
 } from "@react-pdf/renderer";
 
 export interface InvoicePDFData {
@@ -47,6 +47,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: 28,
+  },
+  headerBrandContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  headerLogo: {
+    width: 42,
+    height: 42,
+    marginRight: 10,
+    objectFit: "contain",
   },
   brandTitle: {
     fontSize: 14,
@@ -192,11 +202,14 @@ export const InvoicePDFDocument: React.FC<{ data: InvoicePDFData }> = ({ data })
     <Page size="A4" style={styles.page}>
       {/* Header */}
       <View style={styles.header}>
-        <View>
-          <Text style={styles.brandTitle}>{data.companyName}</Text>
-          <Text style={styles.companyText}>{data.companySubtitle}</Text>
-          <Text style={styles.companyText}>{data.companyEmail}</Text>
-          <Text style={styles.companyText}>{data.companyPhone}</Text>
+        <View style={styles.headerBrandContainer}>
+          <Image src="/logo.png" style={styles.headerLogo} />
+          <View>
+            <Text style={styles.brandTitle}>{data.companyName}</Text>
+            <Text style={styles.companyText}>{data.companySubtitle}</Text>
+            <Text style={styles.companyText}>{data.companyEmail}</Text>
+            <Text style={styles.companyText}>{data.companyPhone}</Text>
+          </View>
         </View>
         <View>
           <Text style={styles.invoiceTitle}>INVOICE</Text>

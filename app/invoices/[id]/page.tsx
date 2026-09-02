@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, use } from "react";
+import React, { use, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Icon } from "@iconify/react";
 import { Button, StatusBadge, useToast } from "@/app/components/ui";
 import { pdf } from "@react-pdf/renderer";
-import { InvoicePDFDocument, InvoicePDFData } from "@/app/components/InvoicePDFDocument";
+import { InvoicePDFData, InvoicePDFDocument } from "@/app/components/InvoicePDFDocument";
 import { createClient } from "@/utils/supabase/client";
 import { InvoiceStatus } from "@/app/lib/types";
 
@@ -27,13 +27,13 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
 
     // Fetch user profile info
     let profileInfo = {
-      companyName: "FREELANCER STUDIO",
-      companySubtitle: "Web Development & Digital Services",
-      companyEmail: user?.email || "hello@example.com",
-      companyPhone: "+62 812 0000 0000",
-      bankName: "Bank BCA",
+      accountHolder: "Ridho Hidayat",
       accountNumber: "1234567890",
-      accountHolder: "Freelancer Owner",
+      bankName: "Bank BCA",
+      companyEmail: user?.email || "hello@example.com",
+      companyName: "Ridho Hidayat",
+      companyPhone: "+62 812 0000 0000",
+      companySubtitle: "Web Development & Digital Services",
     };
 
     if (user) {
@@ -45,13 +45,13 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
 
       if (profile) {
         profileInfo = {
-          companyName: profile.company_name || profile.full_name || "FREELANCER STUDIO",
-          companySubtitle: "Web Development & Digital Services",
-          companyEmail: profile.email || user.email || "",
-          companyPhone: profile.phone || "+62 812 0000 0000",
-          bankName: profile.bank_name || "Bank BCA",
+          accountHolder: profile.account_holder || profile.full_name || "Ridho Hidayat",
           accountNumber: profile.account_number || "1234567890",
-          accountHolder: profile.account_holder || profile.full_name || "Freelancer Owner",
+          bankName: profile.bank_name || "Bank BCA",
+          companyEmail: profile.email || user.email || "",
+          companyName: profile.company_name || profile.full_name || "Ridho Hidayat",
+          companyPhone: profile.phone || "+62 812 0000 0000",
+          companySubtitle: "Web Development & Digital Services",
         };
       }
     }
@@ -66,31 +66,31 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
     if (invErr || !inv) {
       // Fallback dummy for direct demo view if ID not found
       setInvoiceData({
+        clientAddress: "Jakarta, Indonesia",
+        clientEmail: "john@example.com",
+        clientName: "PT ABC Indonesia",
+        date: "Aug 15, 2026",
+        ...profileInfo,
+        discount: 200000,
+        dueDate: "Aug 30, 2026",
+        items: [
+          { description: "Website Development", price: 3000000, quantity: 1 },
+          { description: "Hosting", price: 500000, quantity: 1 },
+        ],
+        notes: "Thank you for your business.",
         number: "INV-2026-001",
         status: "paid",
-        date: "Aug 15, 2026",
-        dueDate: "Aug 30, 2026",
-        ...profileInfo,
-        clientName: "PT ABC Indonesia",
-        clientEmail: "john@example.com",
-        clientAddress: "Jakarta, Indonesia",
-        items: [
-          { description: "Website Development", quantity: 1, price: 3000000 },
-          { description: "Hosting", quantity: 1, price: 500000 },
-        ],
         subtotal: 3500000,
-        discount: 200000,
         tax: 330000,
         total: 3630000,
-        notes: "Thank you for your business.",
       });
       setCurrentStatus("paid");
     } else {
       setCurrentStatus(inv.status as InvoiceStatus);
-      const itemsMapped = (inv.invoice_items || []).map((it: { description: string; quantity: number; price: number }) => ({
+      const itemsMapped = (inv.invoice_items || []).map((it: { description: string; price: number; quantity: number }) => ({
         description: it.description,
-        quantity: Number(it.quantity) || 1,
         price: Number(it.price) || 0,
+        quantity: Number(it.quantity) || 1,
       }));
 
       setInvoiceData({
@@ -220,11 +220,9 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
       <div className="bg-white border border-gray-100 rounded-xl2 shadow-card p-6 sm:p-10 max-w-3xl mx-auto print:shadow-none print:border-none print:p-0">
         <div className="flex flex-col sm:flex-row sm:justify-between gap-6 mb-10">
           <div>
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center">
-                <Icon icon="solar:bill-list-bold" className="text-white text-sm" />
-              </div>
-              <span className="font-semibold text-gray-900">{invoiceData.companyName}</span>
+            <div className="flex items-center gap-3 mb-3">
+              <img src="/logo.png" alt="Ridho Hidayat Logo" className="w-10 h-10 object-contain rounded" />
+              <span className="font-semibold text-gray-900 text-lg">{invoiceData.companyName}</span>
             </div>
             <p className="text-xs text-gray-400 leading-relaxed">
               {invoiceData.companySubtitle}
